@@ -32,6 +32,26 @@ export async function initDb() {
             created_at TIMESTAMP DEFAULT NOW()
         );`);
     console.log("✅ Refresh Tokens table is ready.");
+
+    // 4. Create the 'chats' table
+    await pool.query(`CREATE TABLE IF NOT EXISTS chats (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            title VARCHAR(255) NOT NULL,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        );`);
+    console.log("✅ Chats table is ready.");
+
+    // 5. Create the 'messages' table
+    await pool.query(`CREATE TABLE IF NOT EXISTS messages (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            chat_id UUID NOT NULL REFERENCES chats(id) ON DELETE CASCADE,
+            role VARCHAR(20) NOT NULL,
+            content TEXT NOT NULL,
+            is_deleted BOOLEAN DEFAULT FALSE,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        );`);
+    console.log("✅ Messages table is ready.");
   } catch (error) {
     console.error("❌ Failed to initialize database tables:", error);
     throw error;

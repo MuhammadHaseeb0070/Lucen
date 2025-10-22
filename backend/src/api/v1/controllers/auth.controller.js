@@ -3,7 +3,7 @@ import crypto from "crypto";
 import jwt from "jsonwebtoken";
 import { ApiError } from "../../../utils/ApiError.js";
 import { ApiResponse } from "../../../utils/ApiResponse.js";
-import { DB_deleteRefreshToken, DB_findRefreshToken, DB_findUser, DB_findUserById, DB_saveRefreshToken, DB_findUserByPasswordResetToken, DB_updatePassword, DB_deletePasswordResetToken, DB_updatePasswordResetToken } from "../../../model/user.model.js";
+import { DB_deleteRefreshToken, DB_findRefreshToken, DB_findUser, DB_findUserById, DB_saveRefreshToken, DB_findUserByPasswordResetToken, DB_updatePassword, DB_deletePasswordResetToken, DB_updatePasswordResetToken, DB_deleteRefreshTokenByToken } from "../../../model/user.model.js";
 import { DB_updateOtp } from "../../../model/user.model.js";
 import { DB_createUser } from "../../../model/user.model.js"
 import { DB_verifyUser } from "../../../model/user.model.js";
@@ -265,6 +265,24 @@ export const resetPassword= async(req,res,next)=>{
 
 
     } catch (error) {
-        
+        next(error);
     }
 }
+
+export const logout = async (req, res, next) => {
+    try {
+        const { refreshToken } = req.body;
+
+        if (!refreshToken) {
+            throw new ApiError(400, 'Refresh token is required');
+        }
+
+        await DB_deleteRefreshTokenByToken(refreshToken);
+
+        return res.status(200).json(
+            new ApiResponse(200, null, 'Logout successful')
+        );
+    } catch (error) {
+        next(error);
+    }
+};

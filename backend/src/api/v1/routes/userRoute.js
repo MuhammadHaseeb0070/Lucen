@@ -1,5 +1,5 @@
 import express from "express";
-import { signUp, verifyOtp, login, resendOtp, refreshTokenController, forgottenPassword, resetPassword } from "../controllers/auth.controller.js";
+import { signUp, verifyOtp, login, resendOtp, refreshTokenController, forgottenPassword, resetPassword, logout } from "../controllers/auth.controller.js";
 import { verifyToken } from "../../../middlewares/auth.middleware.js";
 import { asyncHandler } from "../../../utils/asyncHandler.js";
 
@@ -12,6 +12,7 @@ router.post('/resend-otp', asyncHandler(resendOtp));
 router.post('/refresh-token', asyncHandler(refreshTokenController));
 router.post('/forgotten-password', asyncHandler(forgottenPassword));
 router.post('/reset-password', asyncHandler(resetPassword));
+router.post('/logout', asyncHandler(logout));
 
 router.get("/protected", verifyToken, (req, res) => {
     res.json({

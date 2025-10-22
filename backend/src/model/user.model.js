@@ -80,3 +80,8 @@ export async function DB_deletePasswordResetToken(userId) {
     const result = await pool.query(`UPDATE users SET password_reset_token = NULL, password_reset_expires_at = NULL WHERE id = $1 RETURNING id,name,email,role ,created_at`, [userId]);
     return result.rows[0]
 }
+
+export async function DB_deleteRefreshTokenByToken(token) {
+    const result = await pool.query(`DELETE FROM refresh_tokens WHERE token = $1`, [token]);
+    return result.rowCount;
+}

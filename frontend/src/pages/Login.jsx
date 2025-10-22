@@ -15,9 +15,9 @@ const Login = () => {
     
     try {
       const response = await api.post('/auth/login', { email, password });
-      const { user, accessToken } = response.data;
+      const { user, accessToken, refreshToken } = response.data;
       
-      login(user, accessToken);
+      login(user, accessToken, refreshToken);
       toast.success('Logged in successfully!');
       navigate('/');
     } catch (error) {

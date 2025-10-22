@@ -3,6 +3,7 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import { errorHandler } from "./middlewares/errorHandler.js";
 import userRoute from "./api/v1/routes/userRoute.js";
+import chatRoute from "./api/v1/routes/chatRoute.js";
 
 const app = express();
 
@@ -18,6 +19,7 @@ app.use(cookieParser());
 
 
 app.use("/api/v1/auth",userRoute);
+app.use("/api/v1/chats", chatRoute);
 
 
 

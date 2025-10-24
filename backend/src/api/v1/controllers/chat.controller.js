@@ -6,6 +6,12 @@ import {
   DB_findMessagesByChatId, 
   DB_createMessage 
 } from '../../../model/chat.model.js';
+import OpenAI from 'openai';
+
+// Initialize OpenAI client
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
 
 // Create a new chat
 export const createChat = async (req, res, next) => {
@@ -74,11 +80,69 @@ export const addMessage = async (req, res, next) => {
     }
 
     // Create the user message
-    const message = await DB_createMessage(chatId, 'user', content);
+    const userMessage = await DB_createMessage(chatId, 'user', content);
 
-    return res.status(201).json(
-      new ApiResponse(201, message, 'Message added successfully')
-    );
+    // Fetch recent chat history (last 10 messages)
+    const chatHistory = await DB_findMessagesByChatId(chatId);
+    const recentHistory = chatHistory.slice(-8); // Get last 10 messages
+
+    // Format history for OpenAI API
+    const formattedMessages = recentHistory.map(msg => ({
+      role: msg.role,
+      content: msg.content
+    }));
+
+    // Prepend system message with persona
+    const systemMessage = {
+      role: 'system',
+      content: 'You are Lucen, a helpful AI assistant created for the lucen.space platform. Your goal is to assist users efficiently. Do not reveal that you are based on OpenAI models. Respond concisely and helpfully. Avoid mentioning OpenAI or GPT.'
+    };
+
+    // Add system message to the beginning of the messages array
+    const messagesWithSystem = [systemMessage, ...formattedMessages];
+
+    // Set SSE headers
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.flushHeaders(); // Send headers immediately
+
+    try {
+      // Call OpenAI chat completions with streaming
+      const stream = await openai.chat.completions.create({
+        model: 'gpt-5-nano',
+        messages: messagesWithSystem,
+        stream: true,
+      });
+
+      let fullAssistantResponse = '';
+
+      // Stream the response
+      for await (const chunk of stream) {
+        const content = chunk.choices[0]?.delta?.content || '';
+        
+        if (content) {
+          fullAssistantResponse += content;
+          // Send SSE message to client
+          res.write(`data: ${JSON.stringify({ content })}\n\n`);
+        }
+      }
+
+      // Save the complete assistant response to database
+      await DB_createMessage(chatId, 'assistant', fullAssistantResponse);
+
+      // Send final SSE event to signal end
+      res.write('event: end\ndata: {}\n\n');
+      res.end();
+
+    } catch (openaiError) {
+      console.error('OpenAI streaming error:', openaiError);
+      
+      // Send error event to client
+      res.write(`event: error\ndata: ${JSON.stringify({ message: 'Error processing AI response' })}\n\n`);
+      res.end();
+    }
+
   } catch (error) {
     next(error);
   }
